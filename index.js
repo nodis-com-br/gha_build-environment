@@ -8,6 +8,9 @@ const base64 = require('base-64');
 const AWS = require('aws-sdk');
 
 
+console.log(fs.readdirSync('.'));
+
+
 
 function validateTopics(topics, subset, title) {
     let matches = [];
