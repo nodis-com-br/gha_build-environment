@@ -97,7 +97,7 @@ fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: he
             environmentVars.CUSTOM_TAG = environmentVars.LEGACY ? 'legacy' : 'latest';
             environmentVars.IMAGE_NAME = process.env.NODIS_REGISTRY + '/' + projectName;
             environmentVars.SERVICE_NAME = projectName.replace('_', '-');
-            environmentVars.CLUSTER_NAME = settings['clusterMappings'][environmentVars.ENVIRONMENT];
+            environmentVars.CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[environmentVars.ENVIRONMENT];
 
             publishEnvironmentArtifact(environmentVars)
 
