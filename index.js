@@ -60,16 +60,16 @@ function validateTopics(topics, subset, title) {
 
 function publishEnvironmentArtifact(environmentVars) {
 
-    fs.writeFileSync('./environmentVars.json', JSON.stringify(environmentVars, null, 2));
     const artifactClient = artifact.create();
+
+    fs.writeFileSync('./environmentVars.json', JSON.stringify(environmentVars, null, 2));
     artifactClient
         .uploadArtifact('environmentVars', ['environmentVars.json'], '.')
         .catch(error => core.setFailed(error));
 
 }
 
-// const commitMessage = github.context.payload.commits[0].message;
-const commitMessage = '';
+const commitMessage = github.context.payload.commits[0].message;
 
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const branchType =  process.env.GITHUB_REF.split('/')[2];
@@ -92,9 +92,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
 }).then(response => {
 
-    const topics = response.names;
-    const interpreter = validateTopics(topics, settings['interpreterTopics'], 'interpreter');
-    const projectClass = validateTopics(topics, settings['projectClassTopics'], 'class');
+    const interpreter = validateTopics(response.names, settings['interpreterTopics'], 'interpreter');
+    const projectClass = validateTopics(response.names, settings['projectClassTopics'], 'class');
 
     if (projectClass !== 'library') {
 
@@ -142,10 +141,10 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
     } else if (settings['webAppTopics'].includes(projectClass)) {
 
+        const s3 = new AWS.S3({apiVersion: '2006-03-01'});
+
         environmentVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
         environmentVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
-
-        const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
         let bucketParam = {Bucket: 'nodis-webapps', Key: projectName + '/' + environmentVars.NODIS_ARTIFACT_FILENAME};
         s3.headObject(bucketParam, function(err, data) {
