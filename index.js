@@ -74,8 +74,7 @@ const projectName = github.context.payload.repository.name;
 const branchType = github.context.payload.ref.split('/')[3];
 const commitMessage = github.context.payload.commits[0].message;
 
-const projectPath = process.env.GITHUB_WORKSPACE + '/' + projectName;
-const fullVersion = ini.parse(fs.readFileSync(projectPath + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
+const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 const baseVersion = fullVersion.split('-')[0];
 
 let environmentVars = {
@@ -146,7 +145,7 @@ fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: he
     } else if (settings['webAppTopics'].includes(projectClass)) {
 
         environmentVars.ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
-        environmentVars.SUBDOMAIN = JSON.parse(fs.readFileSync(projectPath +  '/package.json', 'utf-8')).subdomain;
+        environmentVars.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8')).subdomain;
 
         const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
