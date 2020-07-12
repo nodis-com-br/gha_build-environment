@@ -8,9 +8,47 @@ const base64 = require('base-64');
 const AWS = require('aws-sdk');
 
 
-console.log(fs.readdirSync('.'));
-
-
+const settings = {
+    "versionConflictMessage": "!!! Version already exists in repository !!!",
+    "interpreterTopics": [
+        "python",
+        "nodejs"
+    ],
+    "projectClassTopics": [
+        "flask-app",
+        "react-app",
+        "nodejs-app",
+        "cronjob",
+        "library"
+    ],
+    "dockerAppTopics": [
+        "flask-app",
+        "nodejs-app",
+        "cronjob"
+    ],
+    "webAppTopics": [
+        "react-app"
+    ],
+    "envMappings": {
+        "dev": "dev",
+        "rc": "qa"
+    },
+    "branchTypeMappings": {
+        "dev": [
+            "develop",
+            "legacy"
+        ],
+        "qa": [
+            "release",
+            "legacy"
+        ],
+        "prod": [
+            "master",
+            "hotfix",
+            "legacy"
+        ]
+    }
+};
 
 function validateTopics(topics, subset, title) {
     let matches = [];
@@ -37,7 +75,6 @@ const branchType = github.context.payload.ref.split('/')[3];
 const commitMessage = github.context.payload.commits[0].message;
 
 const projectPath = process.env.GITHUB_WORKSPACE + '/' + projectName;
-const settings = JSON.parse(fs.readFileSync('./settings.json', 'utf-8'));
 const fullVersion = ini.parse(fs.readFileSync(projectPath + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 const baseVersion = fullVersion.split('-')[0];
 
