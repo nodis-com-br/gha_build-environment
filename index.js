@@ -68,25 +68,23 @@ function publishEnvironmentArtifact(environmentVars) {
 
 }
 
-const repositoryName = github.context.payload.repository.full_name;
-const projectName = github.context.payload.repository.name;
-const branchType = github.context.payload.ref.split('/')[3];
 const commitMessage = github.context.payload.commits[0].message;
-cd
+
+const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
+const branchType =  process.env.GITHUB_REF.split('/')[2];
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
-const baseVersion = fullVersion.split('-')[0];
 
 let environmentVars = {
     NODIS_PROJECT_NAME: projectName,
     NODIS_FULL_VERSION: fullVersion,
-    NODIS_BASE_VERSION: baseVersion,
+    NODIS_BASE_VERSION: fullVersion.split('-')[0],
     NODIS_NO_DEPLOY: commitMessage.includes('***NO_DEPLOY***') || branchType === 'legacy',
     NODIS_NO_BUILD: commitMessage.includes('***NO_BUILD***'),
     NODIS_LEGACY: branchType === 'legacy'
 };
 
 let headers = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
-fetch(process.env.GITHUB_API_URL + '/repos/' + repositoryName + '/topics', {headers: headers}).then(response => {
+fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics', {headers: headers}).then(response => {
 
     if (response.status === 200) return response.json();
     else throw 'Could not retrieve topics: ' + response.status + ' ' + response.statusText
