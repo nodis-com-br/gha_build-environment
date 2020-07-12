@@ -68,7 +68,8 @@ function publishEnvironmentArtifact(environmentVars) {
 
 }
 
-const commitMessage = github.context.payload.commits[0].message;
+// const commitMessage = github.context.payload.commits[0].message;
+const commitMessage = '';
 
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const branchType =  process.env.GITHUB_REF.split('/')[2];
@@ -110,7 +111,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     if (projectClass === 'library' && interpreter === 'python') {
 
         let headers = {Authorization: 'Basic '+ base64.encode(process.env.NODIS_PYPI_USER + ':' + process.env.NODIS_PYPI_PASSWORD)};
-        fetch(process.env.NODIS_PYPI_URL + '/' + projectName + '/json', {headers: headers}).then(response => {
+        fetch('https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json', {headers: headers}).then(response => {
 
             if (response.status === 200) return response.json();
             else throw 'Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText
@@ -125,15 +126,15 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     } else if (settings['dockerAppTopics'].includes(projectClass)) {
 
         let headers = {Authorization: 'Basic '+ base64.encode(process.env.NODIS_REGISTRY_USER + ':' + process.env.NODIS_REGISTRY_PASSWORD)};
-        fetch('https://' + process.env.NODIS_REGISTRY + '/v2/' + projectName + '/manifests/' + fullVersion, {headers: headers}).then(response => {
+        fetch('https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + projectName + '/manifests/' + fullVersion, {headers: headers}).then(response => {
 
             response.status === 200 && core.setFailed(settings['versionConflictMessage']);
 
             environmentVars.NODIS_SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
             environmentVars.NODIS_CUSTOM_TAG = environmentVars.LEGACY ? 'legacy' : 'latest';
-            environmentVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY + '/' + projectName;
+            environmentVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
             environmentVars.NODIS_SERVICE_NAME = projectName.replace('_', '-');
-            environmentVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[environmentVars.ENVIRONMENT];
+            environmentVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[environmentVars.NODIS_ENVIRONMENT];
 
             publishEnvironmentArtifact(environmentVars)
 
@@ -142,11 +143,11 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     } else if (settings['webAppTopics'].includes(projectClass)) {
 
         environmentVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
-        environmentVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8')).subdomain;
+        environmentVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
         const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
-        let bucketParam = {Bucket: 'nodis-webapps', Key: projectName + '/' + environmentVars.ARTIFACT_FILENAME};
+        let bucketParam = {Bucket: 'nodis-webapps', Key: projectName + '/' + environmentVars.NODIS_ARTIFACT_FILENAME};
         s3.headObject(bucketParam, function(err, data) {
 
             if (err) publishEnvironmentArtifact(environmentVars);
