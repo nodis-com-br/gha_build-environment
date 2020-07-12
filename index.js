@@ -120,7 +120,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             if (fullVersion in response.releases) core.setFailed(settings['versionConflictMessage']);
             else publishEnvironmentArtifact(environmentVars)
 
-        })
+        }).catch(error => core.setFailed(error))
 
     } else if (settings['dockerAppTopics'].includes(projectClass)) {
 
@@ -137,7 +137,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
             publishEnvironmentArtifact(environmentVars)
 
-        });
+        }).catch(error => core.setFailed(error));
 
     } else if (settings['webAppTopics'].includes(projectClass)) {
 
@@ -156,8 +156,4 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
     }
 
-}).catch(error => {
-
-    core.setFailed(error)
-
-});
+}).catch(error => core.setFailed(error));
