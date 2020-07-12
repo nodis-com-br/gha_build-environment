@@ -61,8 +61,7 @@ function validateTopics(topics, subset, title) {
 function publishEnvironmentArtifact(environmentVars) {
 
     fs.writeFileSync('./environmentVars.json', JSON.stringify(environmentVars, null, 2));
-        const artifactClient = artifact.create();
-
+    const artifactClient = artifact.create();
     artifactClient
         .uploadArtifact('environmentVars', ['environmentVars.json'], '.')
         .catch(error => core.setFailed(error));
@@ -73,21 +72,21 @@ const repositoryName = github.context.payload.repository.full_name;
 const projectName = github.context.payload.repository.name;
 const branchType = github.context.payload.ref.split('/')[3];
 const commitMessage = github.context.payload.commits[0].message;
-
+cd
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 const baseVersion = fullVersion.split('-')[0];
 
 let environmentVars = {
-    PROJECT_NAME: projectName,
-    FULL_VERSION: fullVersion,
-    BASE_VERSION: baseVersion,
-    NO_DEPLOY: commitMessage.includes('***NO_DEPLOY***') || branchType === 'legacy',
-    NO_BUILD: commitMessage.includes('***NO_BUILD***'),
-    LEGACY: branchType === 'legacy'
+    NODIS_PROJECT_NAME: projectName,
+    NODIS_FULL_VERSION: fullVersion,
+    NODIS_BASE_VERSION: baseVersion,
+    NODIS_NO_DEPLOY: commitMessage.includes('***NO_DEPLOY***') || branchType === 'legacy',
+    NODIS_NO_BUILD: commitMessage.includes('***NO_BUILD***'),
+    NODIS_LEGACY: branchType === 'legacy'
 };
 
 let headers = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
-fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: headers}).then(response => {
+fetch(process.env.GITHUB_API_URL + '/repos/' + repositoryName + '/topics', {headers: headers}).then(response => {
 
     if (response.status === 200) return response.json();
     else throw 'Could not retrieve topics: ' + response.status + ' ' + response.statusText
@@ -101,10 +100,10 @@ fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: he
     if (projectClass !== 'library') {
 
         const buildPrefix = fullVersion.split('-')[1];
-        environmentVars.ENVIRONMENT = buildPrefix === undefined ? 'prod' : settings['envMappings'][buildPrefix.replace(/[0-9]/g, '')];
-        environmentVars.ENVIRONMENT === undefined && core.setFailed('Environment is undefined: ' + fullVersion);
+        environmentVars.NODIS_ENVIRONMENT = buildPrefix === undefined ? 'prod' : settings['envMappings'][buildPrefix.replace(/[0-9]/g, '')];
+        environmentVars.NODIS_ENVIRONMENT === undefined && core.setFailed('Environment is undefined: ' + fullVersion);
 
-        if (!settings['branchTypeMappings'][environmentVars.ENVIRONMENT].includes(branchType)) {
+        if (!settings['branchTypeMappings'][environmentVars.NODIS_ENVIRONMENT].includes(branchType)) {
             core.setFailed('!!! Branch mismatch: version '+ fullVersion + ' should not be published on branch ' + branchType + ' !!!')
         }
 
@@ -132,11 +131,11 @@ fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: he
 
             response.status === 200 && core.setFailed(settings['versionConflictMessage']);
 
-            environmentVars.SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
-            environmentVars.CUSTOM_TAG = environmentVars.LEGACY ? 'legacy' : 'latest';
-            environmentVars.IMAGE_NAME = process.env.NODIS_REGISTRY + '/' + projectName;
-            environmentVars.SERVICE_NAME = projectName.replace('_', '-');
-            environmentVars.CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[environmentVars.ENVIRONMENT];
+            environmentVars.NODIS_SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
+            environmentVars.NODIS_CUSTOM_TAG = environmentVars.LEGACY ? 'legacy' : 'latest';
+            environmentVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY + '/' + projectName;
+            environmentVars.NODIS_SERVICE_NAME = projectName.replace('_', '-');
+            environmentVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[environmentVars.ENVIRONMENT];
 
             publishEnvironmentArtifact(environmentVars)
 
@@ -144,8 +143,8 @@ fetch('https://api.github.com/repos/' + repositoryName + '/topics', {headers: he
 
     } else if (settings['webAppTopics'].includes(projectClass)) {
 
-        environmentVars.ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
-        environmentVars.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8')).subdomain;
+        environmentVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
+        environmentVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8')).subdomain;
 
         const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
