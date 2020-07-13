@@ -30,7 +30,7 @@ function pubEnvArtifact(envVars) {
 
 // Get project metadata from execution environment
 const commitMessage = 'commits' in github.context.payload ? github.context.payload.commits[0].message : '';
-const branchType =  process.env.GITHUB_EVENT_TYPE === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
+const branchType =  process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 
@@ -61,6 +61,9 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     if (branchType && projectClass !== 'library') {
 
         const buildPrefix = fullVersion.split('-')[1];
+        const bd2 = buildPrefix.replace(/[0-9]/g, '');
+
+
         envVars.NODIS_DEPLOY_ENV = buildPrefix === undefined ? 'prod' : config['envMappings'][buildPrefix.replace(/[0-9]/g, '')];
         envVars.NODIS_DEPLOY_ENV === undefined && core.setFailed('Environment is undefined: ' + fullVersion);
 
@@ -96,7 +99,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
             envVars.NODIS_CUSTOM_TAG = envVars.NODIS_LEGACY ? 'legacy' : 'latest';
             envVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
-            envVars.NODIS_SERVICE_NAME = projectName.replace('_', '-');
+            envVars.NODIS_SERVICE_NAME = projectName.replace(/_/g, '-');
             envVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[envVars.NODIS_DEPLOY_ENV];
 
             pubEnvArtifact(envVars)

@@ -20,7 +20,7 @@ module.exports = {
         "react-app"
     ],
     envMappings: {
-        de: "dev",
+        dev: "dev",
         rc: "qa"
     },
     branchTypeMappings: {
