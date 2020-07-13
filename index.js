@@ -72,7 +72,7 @@ function publishEnvironmentArtifact(environmentVars) {
 const commitMessage = github.context.payload.commits[0].message;
 
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
-const branchType =  process.env.GITHUB_EVENT_TYPE === 'push' ? process.env.GITHUB_REF.split('/')[2] : process.env.GITHUB_EVENT_TYPE;
+const branchType =  process.env.GITHUB_EVENT_TYPE === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 
 let environmentVars = {
@@ -95,7 +95,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     const interpreter = validateTopics(response.names, settings['interpreterTopics'], 'interpreter');
     const projectClass = validateTopics(response.names, settings['projectClassTopics'], 'class');
 
-    if (projectClass !== 'library' && branchType !== 'pull_request') {
+    if (branchType && projectClass !== 'library') {
 
         const buildPrefix = fullVersion.split('-')[1];
         environmentVars.NODIS_ENVIRONMENT = buildPrefix === undefined ? 'prod' : settings['envMappings'][buildPrefix.replace(/[0-9]/g, '')];
