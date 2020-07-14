@@ -33,6 +33,8 @@ const commitMessage = 'commits' in github.context.payload ? github.context.paylo
 const branchType =  process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
+const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "false";
+
 
 // Create environment vars object
 let envVars = {
@@ -61,8 +63,6 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     if (branchType && projectClass !== 'library') {
 
         const buildPrefix = fullVersion.split('-')[1];
-        const bd2 = buildPrefix.replace(/[0-9]/g, '');
-
 
         envVars.NODIS_DEPLOY_ENV = buildPrefix === undefined ? 'prod' : config['envMappings'][buildPrefix.replace(/[0-9]/g, '')];
         envVars.NODIS_DEPLOY_ENV === undefined && core.setFailed('Environment is undefined: ' + fullVersion);
@@ -84,7 +84,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         }).then(response => {
 
-            fullVersion in response['releases'] ? core.setFailed(config['versionConflictMessage']) : pubEnvArtifact(envVars)
+            skipVersionValidation || fullVersion in response['releases'] && core.setFailed(config['versionConflictMessage']);
+            pubEnvArtifact(envVars)
 
         }).catch(error => core.setFailed(error))
 
@@ -94,7 +95,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         let headers = {Authorization: 'Basic '+ base64.encode(process.env.NODIS_REGISTRY_USER + ':' + process.env.NODIS_REGISTRY_PASSWORD)};
         fetch('https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + projectName + '/manifests/' + fullVersion, {headers: headers}).then(response => {
 
-            response.status === 200 && core.setFailed(config['versionConflictMessage']);
+            skipVersionValidation || response.status === 200 && core.setFailed(config['versionConflictMessage']);
 
             envVars.NODIS_SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
             envVars.NODIS_CUSTOM_TAG = envVars.NODIS_LEGACY ? 'legacy' : 'latest';
