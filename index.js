@@ -118,8 +118,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         let bucketParam = {Bucket: 'nodis-webapps', Key: projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME};
         s3.headObject(bucketParam, function(err, data) {
 
-            if (err) pubEnvArtifact(envVars);
-            else core.setFailed(config['versionConflictMessage'])
+            skipVersionValidation || err || core.setFailed(config['versionConflictMessage']);
+            pubEnvArtifact(envVars);
 
         });
 
