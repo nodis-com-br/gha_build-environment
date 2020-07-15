@@ -1,20 +1,23 @@
 module.exports = {
     versionConflictMessage: "!!! Version already exists in repository !!!",
+    publicRegistry: 'docker.io/nodisbr',
     interpreterTopics: [
         "python",
-        "nodejs"
+        "nodejs",
+        "shell"
     ],
     projectClassTopics: [
         "flask-app",
         "react-app",
         "nodejs-app",
         "cronjob",
-        "library"
+        "library",
+        "public-image"
     ],
     dockerAppTopics: [
         "flask-app",
         "nodejs-app",
-        "cronjob"
+        "cronjob",
     ],
     webAppTopics: [
         "react-app"
