@@ -78,8 +78,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         fetch('https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json', {headers: headers}).then(response => {
 
             if (response.status === 200) return response.json();
-
-            else if (response.status === 404) pubEnvArtifact(envVars);
+            else if (response.status === 404) return {releases: []};
             else throw 'Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText
 
         }).then(response => {
