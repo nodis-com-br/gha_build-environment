@@ -4,7 +4,8 @@ module.exports = {
     interpreterTopics: [
         "python",
         "nodejs",
-        "shell"
+        "shell",
+        "docker"
     ],
     projectClassTopics: [
         "flask-app",

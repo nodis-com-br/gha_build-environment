@@ -41,8 +41,6 @@ let envVars = {
     NODIS_PROJECT_NAME: projectName,
     NODIS_FULL_VERSION: fullVersion,
     NODIS_BASE_VERSION: baseVersion,
-    NODIS_NO_DEPLOY: commitMessage.includes('***NO_DEPLOY***') || branchType === 'legacy',
-    NODIS_NO_BUILD: commitMessage.includes('***NO_BUILD***'),
     NODIS_LEGACY: branchType === 'legacy'
 };
 
@@ -80,6 +78,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         fetch('https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json', {headers: headers}).then(response => {
 
             if (response.status === 200) return response.json();
+
+            else if (response.status === 404) pubEnvArtifact(envVars);
             else throw 'Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText
 
         }).then(response => {
