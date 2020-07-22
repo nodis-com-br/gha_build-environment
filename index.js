@@ -83,7 +83,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         }).then(response => {
 
-            skipVersionValidation || fullVersion in response['releases'] && core.setFailed(config['versionConflictMessage']);
+            branchType === 'master' || skipVersionValidation || fullVersion in response['releases'] && core.setFailed(config['versionConflictMessage']);
             pubEnvArtifact(envVars)
 
         }).catch(error => core.setFailed(error))
