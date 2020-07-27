@@ -139,13 +139,14 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     } else if (projectClass === 'lambda-function') {
 
         const functionName = projectName.substring(3);
-        const artifactFileName = functionName + '-' + fullVersion + '.zip';
 
         envVars.NODIS_FUNCTION_NAME = functionName;
-        envVars.NODIS_ARTIFACT_FILENAME = artifactFileName;
+        envVars.NODIS_ARTIFACT_NAME = functionName + '.zip';
+        envVars.NODIS_ARTIFACT_FULLNAME = functionName + '-' + fullVersion + '.zip';
+        envVars.NODIS_ARTIFACT_PATH = functionName;
         envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucket + '-' + process.env.AWS_REGION;
 
-        verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, functionName + '/' + artifactFileName, envVars, skipVersionValidation);
+        verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, envVars.NODIS_ARTIFACT_PATH + '/' + envVars.NODIS_ARTIFACT_FULLNAME, envVars, skipVersionValidation);
 
     // Set webapps environment vars
     } else if (config.webAppTopics.includes(projectClass)) {
