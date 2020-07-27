@@ -1,6 +1,8 @@
 module.exports = {
     versionConflictMessage: "!!! Version already exists in repository !!!",
     publicRegistry: 'docker.io/nodisbr',
+    webappsBucket: 'nodis-webapps',
+    lambdaBucket: 'nodis-lambda',
     interpreterTopics: [
         "python",
         "nodejs",
@@ -13,7 +15,9 @@ module.exports = {
         "nodejs-app",
         "cronjob",
         "library",
-        "public-image"
+        "public-image",
+        "lambda-function"
+
     ],
     dockerAppTopics: [
         "flask-app",

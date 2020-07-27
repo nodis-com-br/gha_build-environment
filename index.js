@@ -1,5 +1,4 @@
 const core = require('@actions/core');
-const github = require('@actions/github');
 const artifact = require('@actions/artifact');
 const ini = require('ini');
 const fs = require('fs');
@@ -17,6 +16,22 @@ function validateTopics(topics, subset, title) {
     else return matches[0]
 }
 
+
+function verifyArtifactOnS3(bucket, key, envVars, skipVersionValidation) {
+
+    const s3 = new AWS.S3({apiVersion: '2006-03-01'});
+
+    let bucketParam = {Bucket: bucket, Key: key};
+    s3.headObject(bucketParam, function(err, data) {
+
+        skipVersionValidation || err || core.setFailed(config.versionConflictMessage);
+        pubEnvArtifact(envVars);
+
+    });
+
+}
+
+
 function pubEnvArtifact(envVars) {
 
     const artifactClient = artifact.create();
@@ -29,7 +44,6 @@ function pubEnvArtifact(envVars) {
 }
 
 // Get project metadata from execution environment
-const commitMessage = 'commits' in github.context.payload ? github.context.payload.commits[0].message : '';
 const branchType =  process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
 const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
 const baseVersion = fullVersion.split('-')[0];
@@ -122,22 +136,25 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         }).catch(error => core.setFailed(error));
 
+    } else if (projectClass === 'lambda-function') {
+
+        const functionName = projectName.substring(3);
+        const artifactFileName = functionName + '-' + fullVersion + '.zip';
+
+        envVars.NODIS_FUNCTION_NAME = functionName;
+        envVars.NODIS_ARTIFACT_FILENAME = artifactFileName;
+        envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucket + '-' + process.env.AWS_REGION;
+
+        verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, functionName + '/' + artifactFileName, envVars, skipVersionValidation);
+
     // Set webapps environment vars
     } else if (config.webAppTopics.includes(projectClass)) {
-
-        const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
         envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
         envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
-        let bucketParam = {Bucket: 'nodis-webapps', Key: projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME};
-        s3.headObject(bucketParam, function(err, data) {
+        verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, skipVersionValidation);
 
-            skipVersionValidation || err || core.setFailed(config.versionConflictMessage);
-            pubEnvArtifact(envVars);
+    } else core.setFailed('Could not build environment for ' + projectClass + '/' + interpreter)
 
-        });
-
-    }
-
-}).catch(error => core.setFailed(error));
+}).then().catch(error => core.setFailed(error));
