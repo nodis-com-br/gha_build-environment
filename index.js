@@ -44,8 +44,9 @@ function pubEnvArtifact(envVars) {
 }
 
 // Get project metadata from execution environment
+const projectSetup = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'));
 const branchType =  process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF.split('/')[2] : false;
-const fullVersion = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'))['bumpversion']['current_version'];
+const fullVersion = projectSetup['bumpversion']['current_version'];
 const baseVersion = fullVersion.split('-')[0];
 const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true";
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
@@ -55,7 +56,7 @@ let envVars = {
     NODIS_PROJECT_NAME: projectName,
     NODIS_FULL_VERSION: fullVersion,
     NODIS_BASE_VERSION: baseVersion,
-    NODIS_LEGACY: branchType === 'legacy'
+    NODIS_LEGACY: branchType === 'legacy',
 };
 
 // Fetch project topic from GitHub
@@ -70,6 +71,9 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     // Validate project topics
     const interpreter = validateTopics(response.names, config.interpreterTopics, 'interpreter');
     const projectClass = validateTopics(response.names, config.projectClassTopics, 'class');
+
+    core.info('Project interpreter: ' + interpreter);
+    core.info('Project class: ' + projectClass);
 
     // Set deployment environment and validate source git branch
     if (branchType && projectClass !== 'library' && projectClass !== 'public-image') {
@@ -128,9 +132,9 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_SERVICE_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
             envVars.NODIS_CUSTOM_TAG = envVars.NODIS_LEGACY ? 'legacy' : 'latest';
             envVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
-            envVars.NODIS_SERVICE_NAME = projectName.replace(/_/g, '-');
             envVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[envVars.NODIS_DEPLOY_ENV];
             envVars.NODIS_IMAGE_TAGS = (envVars.NODIS_LEGACY ? 'legacy ' : 'latest ') + fullVersion + ' ' + baseVersion + ' ' + envVars.NODIS_DEPLOY_ENV;
+            envVars.NODIS_SERVICE_NAME = projectSetup['kubernetes'] !== undefined ? projectSetup['kubernetes']['workload_name'] : projectName.replace(/_/g, '-');
 
             pubEnvArtifact(envVars)
 

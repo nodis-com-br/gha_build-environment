@@ -38,12 +38,10 @@ module.exports = {
         ],
         qa: [
             "release",
-            "legacy"
         ],
         prod: [
             "master",
             "hotfix",
-            "legacy"
         ]
     }
 };
