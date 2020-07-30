@@ -133,7 +133,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_CUSTOM_TAG = envVars.NODIS_LEGACY ? 'legacy' : 'latest';
             envVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
             envVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[envVars.NODIS_DEPLOY_ENV];
-            envVars.NODIS_IMAGE_TAGS = (envVars.NODIS_LEGACY ? 'legacy ' : 'latest ') + fullVersion + ' ' + baseVersion + ' ' + envVars.NODIS_DEPLOY_ENV;
+            envVars.NODIS_IMAGE_TAGS = envVars.NODIS_LEGACY ? 'legacy ' + fullVersion : 'latest ' + fullVersion + ' ' + baseVersion + ' ' + envVars.NODIS_DEPLOY_ENV;
             envVars.NODIS_SERVICE_NAME = projectSetup['kubernetes'] !== undefined ? projectSetup['kubernetes']['workload_name'] : projectName.replace(/_/g, '-');
 
             pubEnvArtifact(envVars)
