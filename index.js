@@ -23,18 +23,18 @@ function verifyArtifactOnS3(bucket, key, envVars, skipVersionValidation) {
 
     let bucketParam = {Bucket: bucket, Key: key};
     s3.headObject(bucketParam, function(err, data) {
-
         skipVersionValidation || err || core.setFailed(config.versionConflictMessage);
-        pubEnvArtifact(envVars);
-
+        pubEnvArtifact(envVars, projectSetup);
     });
 
 }
 
 
-function pubEnvArtifact(envVars) {
+function pubEnvArtifact(envVars, projectSetup) {
 
     const artifactClient = artifact.create();
+
+    'build_environment' in projectSetup && Object.assign(envVars, projectSetup['build_environment']);
 
     fs.writeFileSync('./environmentVars.json', JSON.stringify(envVars, null, 2));
     artifactClient
@@ -102,7 +102,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         }).then(response => {
 
             branchType === 'master' || skipVersionValidation || fullVersion in response['releases'] && core.setFailed(config['versionConflictMessage']);
-            pubEnvArtifact(envVars)
+            pubEnvArtifact(envVars, projectSetup)
 
         }).catch(error => core.setFailed(error))
 
@@ -117,7 +117,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_PROJECT_NAME = projectName;
             envVars.NODIS_IMAGE_NAME = config.publicRegistry + '/' + imageName;
             envVars.NODIS_IMAGE_TAGS = 'latest ' + fullVersion;
-            pubEnvArtifact(envVars)
+            pubEnvArtifact(envVars, projectSetup)
 
         }).catch(error => core.setFailed(error))
 
@@ -134,9 +134,9 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
             envVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[envVars.NODIS_DEPLOY_ENV];
             envVars.NODIS_IMAGE_TAGS = envVars.NODIS_LEGACY ? 'legacy ' + fullVersion : 'latest ' + fullVersion + ' ' + baseVersion + ' ' + envVars.NODIS_DEPLOY_ENV;
-            envVars.NODIS_SERVICE_NAME = projectSetup['kubernetes'] !== undefined ? projectSetup['kubernetes']['workload_name'] : projectName.replace(/_/g, '-');
+            envVars.NODIS_SERVICE_NAME = projectName.replace(/_/g, '-');
 
-            pubEnvArtifact(envVars)
+            pubEnvArtifact(envVars, projectSetup)
 
         }).catch(error => core.setFailed(error));
 
