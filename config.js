@@ -11,6 +11,7 @@ module.exports = {
     ],
     projectClassTopics: [
         "flask-app",
+        "django-app",
         "react-app",
         "nodejs-app",
         "cronjob",
@@ -22,6 +23,7 @@ module.exports = {
     dockerAppTopics: [
         "flask-app",
         "nodejs-app",
+        "django-app",
         "cronjob",
     ],
     webAppTopics: [
