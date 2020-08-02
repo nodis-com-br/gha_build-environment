@@ -17,7 +17,7 @@ function validateTopics(topics, subset, title) {
 }
 
 
-function verifyArtifactOnS3(bucket, key, envVars, skipVersionValidation) {
+function verifyArtifactOnS3(bucket, key, envVars, projectSetup, skipVersionValidation) {
 
     const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
@@ -151,7 +151,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         envVars.NODIS_ARTIFACT_PATH = functionName;
         envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucket + '-' + process.env.AWS_REGION;
 
-        verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, envVars.NODIS_ARTIFACT_PATH + '/' + envVars.NODIS_ARTIFACT_FULLNAME, envVars, skipVersionValidation);
+        verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, envVars.NODIS_ARTIFACT_PATH + '/' + envVars.NODIS_ARTIFACT_FULLNAME, envVars, projectSetup, skipVersionValidation);
 
     // Set webapps environment vars
     } else if (config.webAppTopics.includes(projectClass)) {
@@ -159,8 +159,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + fullVersion + '.tgz';
         envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
-        verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, skipVersionValidation);
+        verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);
 
     } else core.setFailed('Could not build environment for ' + projectClass + '/' + interpreter)
 
-}).then().catch(error => core.setFailed(error));
+}).catch(error => core.setFailed(error));
