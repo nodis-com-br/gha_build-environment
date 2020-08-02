@@ -135,6 +135,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
             envVars.NODIS_CLUSTER_NAME = JSON.parse(process.env.NODIS_CLUSTER_MAPPINGS)[envVars.NODIS_DEPLOY_ENV];
             envVars.NODIS_IMAGE_TAGS = envVars.NODIS_LEGACY ? 'legacy ' + fullVersion : 'latest ' + fullVersion + ' ' + baseVersion + ' ' + envVars.NODIS_DEPLOY_ENV;
             envVars.NODIS_SERVICE_NAME = projectName.replace(/_/g, '-');
+            envVars.NODIS_K8S_NAMESPACE = 'default';
 
             pubEnvArtifact(envVars, projectSetup)
 
