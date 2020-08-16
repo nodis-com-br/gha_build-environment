@@ -7,9 +7,11 @@ module.exports = {
         "python",
         "nodejs",
         "shell",
-        "docker"
+        "docker",
+        "helm"
     ],
     projectClassTopics: [
+        "helm-chart",
         "flask-app",
         "django-app",
         "react-app",

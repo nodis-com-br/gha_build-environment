@@ -121,6 +121,18 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         }).catch(error => core.setFailed(error))
 
+    } else if (projectClass === 'helm-chart') {
+
+        envVars.NODIS_PROJECT_NAME = projectName.substring(7);
+
+        fetch('https://' + process.env.NODIS_CHART_REPOSITORY_USER + ':' + process.env.NODIS_CHART_REPOSITORY_PASS + '@' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + fullVersion, {method: 'HEAD'}).then(response => {
+
+            skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
+            pubEnvArtifact(envVars, projectSetup)
+
+        }).catch(error => core.setFailed(error))
+
+
     // Set docker application environment vars
     } else if (config.dockerAppTopics.includes(projectClass)) {
 
