@@ -125,7 +125,8 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         envVars.NODIS_PROJECT_NAME = projectName.substring(7);
 
-        fetch('https://' + process.env.NODIS_CHART_REPOSITORY_USER + ':' + process.env.NODIS_CHART_REPOSITORY_PASS + '@' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + fullVersion, {method: 'HEAD'}).then(response => {
+        let headers = {Authorization: 'Basic ' + base64.encode(process.env.NODIS_CHART_REPOSITORY_USER + ':' + process.env.NODIS_CHART_REPOSITORY_PASSWORD)};
+        fetch('https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + fullVersion, {headers: headers, method: 'HEAD'}).then(response => {
 
             skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
             pubEnvArtifact(envVars, projectSetup)
