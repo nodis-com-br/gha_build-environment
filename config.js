@@ -1,51 +1,33 @@
 module.exports = {
-    versionConflictMessage: "!!! Version already exists in repository !!!",
+    versionConflictMessage: "Version already exists in repository",
     publicRegistry: 'docker.io/nodisbr',
     webappsBucket: 'nodis-webapps',
     lambdaBucket: 'nodis-lambda',
-    interpreterTopics: [
-        "python",
-        "nodejs",
-        "shell",
-        "docker",
-        "helm"
-    ],
-    projectClassTopics: [
-        "helm-chart",
-        "flask-app",
-        "django-app",
-        "react-app",
-        "nodejs-app",
-        "cronjob",
-        "library",
-        "public-image",
-        "lambda-function"
-
-    ],
-    dockerAppTopics: [
-        "flask-app",
-        "nodejs-app",
-        "django-app",
-        "cronjob",
-    ],
-    webAppTopics: [
-        "react-app"
-    ],
-    envMappings: {
-        dev: "dev",
-        rc: "qa"
+    legacyPattern: /^refs\/head\/legacy\/.+$/,
+    topics: {
+        teams: /(devback|devfront|catalog|experimento)/,
+        interpreters: /(python|nodejs|shell|docker|helm)/,
+        classes: {
+            libraries: ["library"],
+            workloads: ["flask-app", "nodejs-app", "django-app", "cronjob"],
+            webapps: ["react-app"],
+            charts: ["helm-charts"],
+            docker: ["public-image"],
+            lambda: ["lambda-function"]
+        },
     },
-    branchTypeMappings: {
-        dev: [
-            "develop",
-            "legacy"
-        ],
-        qa: [
-            "release",
-        ],
-        prod: [
-            "master",
-            "hotfix",
-        ]
-    }
+    deployEnvs: {
+        dev: {
+            versionPattern: /^\d+\.\d+\.\d+-dev\d+$/,
+            branchPattern: /^refs\/head\/(develop|legacy\/.+)$/,
+        },
+        qa: {
+            versionPattern: /^\d+\.\d+\.\d+-rc\d+$/,
+            branchPattern: /^refs\/head\/release\/.+$/,
+        },
+        prod: {
+            versionPattern: /^\d+\.\d+\.\d+$/,
+            branchPattern: /^refs\/head\/(master|hotfix\/.+)$/,
+        }
+    },
 };
