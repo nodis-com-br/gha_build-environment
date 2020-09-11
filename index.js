@@ -174,14 +174,12 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
 
-                envVars.MAESTRO_REPOSITORY = process.env.GITHUB_REPOSITORY_OWNER + '/' + 'maestro_' + team;
+                envVars.MAESTRO_REPOSITORY = 'maestro_' + team;
 
                 envVars.DOCKER_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
                 envVars.DOCKER_IMAGE_TAGS = [projectVersion].concat(envVars.NODIS_LEGACY ? ['legacy'] : ['latest', projectBaseVersion, envVars.NODIS_DEPLOY_ENV]).join(' ');
 
-                envVars.K8S_WORKLOAD_NAME = projectName.replace(/_/g, '-');
-                envVars.K8S_WORKLOAD_TYPE = projectClass === 'cronjob' ? 'cronjob' : 'deployment';
-                envVars.K8S_NAMESPACE = 'default';
+                envVars.DEPLOY_RC_TO_PROD = projectClass !== 'deployment';
 
                 publishEnvVarsArtifact(envVars, projectSetup)
 
@@ -192,6 +190,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         case 'webapps':
 
             envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+
             envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + projectVersion + '.tgz';
             envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 

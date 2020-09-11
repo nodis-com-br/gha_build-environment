@@ -3,7 +3,7 @@ module.exports = {
     publicRegistry: 'docker.io/nodisbr',
     webappsBucket: 'nodis-webapps',
     lambdaBucket: 'nodis-lambda',
-    legacyPattern: /^refs\/head\/legacy\/.+$/,
+    legacyPattern: /^refs\/heads\/legacy\/.+$/,
     topics: {
         teams: /(devback|devfront|catalog|experimento)/,
         interpreters: /(python|nodejs|shell|docker|helm)/,
@@ -19,15 +19,15 @@ module.exports = {
     deployEnvs: {
         dev: {
             versionPattern: /^\d+\.\d+\.\d+-dev\d+$/,
-            branchPattern: /^refs\/head\/(develop|legacy\/.+)$/,
+            branchPattern: /^refs\/heads\/(develop|legacy\/.+)$/,
         },
         qa: {
             versionPattern: /^\d+\.\d+\.\d+-rc\d+$/,
-            branchPattern: /^refs\/head\/release\/.+$/,
+            branchPattern: /^refs\/heads\/release\/.+$/,
         },
         prod: {
             versionPattern: /^\d+\.\d+\.\d+$/,
-            branchPattern: /^refs\/head\/(master|hotfix\/.+)$/,
+            branchPattern: /^refs\/heads\/(master|hotfix\/.+)$/,
         }
     },
 };
