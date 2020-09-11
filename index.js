@@ -70,7 +70,7 @@ const projectSetup = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/
 const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const projectVersion = projectSetup['bumpversion']['current_version'];
 const projectBaseVersion = projectVersion.split('-')[0];
-const targetBranch = process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : process.env.GITHUB_BASE_REF;
+const targetBranch = process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF;
 
 const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true";
 
