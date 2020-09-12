@@ -5,13 +5,13 @@ module.exports = {
     lambdaBucket: 'nodis-lambda',
     legacyPattern: /^refs\/heads\/legacy\/.+$/,
     topics: {
-        teams: /(devback|devfront|catalog|experimento)/,
-        interpreters: /(python|nodejs|shell|docker|helm)/,
+        teams: /^(devback|devfront|catalog|experimento|devops)$/,
+        interpreters: /^(python|nodejs|shell|docker|helm)$/,
         classes: {
             libraries: ["library"],
             workloads: ["flask-app", "nodejs-app", "django-app", "cronjob"],
             webapps: ["react-app"],
-            charts: ["helm-charts"],
+            charts: ["helm-chart"],
             docker: ["public-image"],
             lambda: ["lambda-function"]
         },

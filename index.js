@@ -74,10 +74,6 @@ const targetBranch = process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITH
 
 const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true";
 
-core.info(process.env.GITHUB_REF);
-core.info(process.env.GITHUB_BASE_REF);
-core.info(targetBranch);
-
 // Create environment vars object
 let envVars = {
     NODIS_PROJECT_NAME: projectName,
@@ -126,7 +122,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
         case 'charts':
 
-            envVars.NODIS_PROJECT_NAME = projectName.substring(7);
+            envVars.NODIS_PROJECT_NAME = projectName.substring(6);
 
             let url1 = 'https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + projectVersion;
             fetch(url1, {headers: buildAuthHeader('NODIS_CHART_REPOSITORY'), method: 'HEAD'}).then(response => {
