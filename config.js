@@ -7,14 +7,15 @@ module.exports = {
     topics: {
         teams: /^(devback|devfront|catalog|experimento|devops)$/,
         interpreters: /^(python|nodejs|shell|docker|helm)$/,
+        workflows: /^(gitflow)$/,
         classes: {
-            libraries: ["library"],
-            workloads: ["flask-app", "nodejs-app", "django-app", "cronjob"],
+            packages: ["library", "python-app"],
+            publicImages: ["public-image"],
+            privateImages: ["flask-app", "nodejs-app", "django-app", "cronjob"],
             webapps: ["react-app"],
             charts: ["helm-chart"],
-            docker: ["public-image"],
             lambda: ["lambda-function"]
-        },
+        }
     },
     deployEnvs: {
         dev: {
@@ -29,5 +30,5 @@ module.exports = {
             versionPattern: /^\d+\.\d+\.\d+$/,
             branchPattern: /^refs\/heads\/(master|hotfix\/.+)$/,
         }
-    },
+    }
 };

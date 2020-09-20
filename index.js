@@ -10,10 +10,10 @@ const config = require('./config.js');
 const process = require('process');
 
 
-function getMetadataFromTopics(type, topics, pattern) {
+function getMetadataFromTopics(type, topics, pattern, required) {
     let matches = [];
     topics.forEach(topic => topic.match(pattern) && matches.push(topic));
-    if (matches.length === 0) core.setFailed('Project missing ' + type + ' topic');
+    if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
     else if (matches.length === 1) {
         core.info('Project ' + type + ': ' + matches[0]);
         return matches[0]
@@ -26,13 +26,13 @@ function aggregateClasses() {
     return new RegExp('(' + classArray.join('|') + ')')
 }
 
-function getDeploymentEnvironment(targetBranch, fullVersion) {
+function getDeploymentEnvironment(targetBranch, projectVersion) {
     let env = false;
-    for (let k in config.deployEnvs) if (config.deployEnvs.hasOwnProperty(k)) if (fullVersion.match(config.deployEnvs[k].versionPattern)) env = k;
+    for (let k in config.deployEnvs) if (config.deployEnvs.hasOwnProperty(k)) if (projectVersion.match(config.deployEnvs[k].versionPattern)) env = k;
     if (env) {
         if (targetBranch.match(config.deployEnvs[env].branchPattern)) return env;
-        else core.setFailed(['Branch mismatch: version', fullVersion, 'should not be published on branch', targetBranch].join(' '))
-    } else core.setFailed(['Deployment environment not found:', targetBranch, '/', fullVersion].join(' '));
+        else core.setFailed(['Branch mismatch: version', projectVersion, 'should not be published on branch', targetBranch].join(' '))
+    } else core.setFailed(['Deployment environment not found:', targetBranch, '/', projectVersion].join(' '));
 }
 
 function getClassGrouping(projectClass) {
@@ -84,7 +84,8 @@ let envVars = {
 
 // Fetch project topic from GitHub
 let headers = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
-fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics', {headers: headers}).then(response => {
+let url = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
+fetch(url, {headers: headers}).then(response => {
 
     if (response.status === 200) return response.json();
     else throw ['Could not retrieve topics:', response.status, response.statusText].join(' ')
@@ -95,19 +96,24 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
     const team = getMetadataFromTopics('team', response.names, config.topics.teams);
     const interpreter = getMetadataFromTopics('interpreter', response.names, config.topics.interpreters);
     const projectClass = getMetadataFromTopics('class', response.names, aggregateClasses());
+    const workflow = getMetadataFromTopics('workflow', response.names, config.topics.workflows, false);
+
+    if (workflow === 'gitflow') envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+    envVars.MAESTRO_REPOSITORY = 'maestro_' + team;
 
     switch(getClassGrouping(projectClass)) {
 
-        case 'libraries':
+        case 'packages':
 
             if (interpreter === 'python') {
 
-                let headers = buildAuthHeader('NODIS_PYPI');
-                fetch('https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json', {headers: headers}).then(response => {
+                let pypiHeaders = buildAuthHeader('NODIS_PYPI');
+                let pypiUrl = 'https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json';
+                fetch(pypiUrl, {headers: pypiHeaders}).then(response => {
 
                     if (response.status === 200) return response.json();
                     else if (response.status === 404) return {releases: []};
-                    else throw 'Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText
+                    else core.setFailed('Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText)
 
                 }).then(response => {
 
@@ -124,8 +130,9 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
             envVars.NODIS_PROJECT_NAME = projectName.substring(6);
 
-            let url1 = 'https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + projectVersion;
-            fetch(url1, {headers: buildAuthHeader('NODIS_CHART_REPOSITORY'), method: 'HEAD'}).then(response => {
+            let chartsHeaders = buildAuthHeader('NODIS_CHART_REPOSITORY');
+            let chartsUrl = 'https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + projectVersion;
+            fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
                 publishEnvVarsArtifact(envVars, projectSetup)
@@ -148,7 +155,7 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
             break;
 
-        case 'docker':
+        case 'publicImages':
 
             const imageName = projectName.substring(3);
 
@@ -165,21 +172,18 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
 
             break;
 
-        case 'workloads':
+        case 'privateImages':
 
             envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
 
-            let url2 = 'https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + projectName + '/manifests/' + projectVersion;
-            fetch(url2, {headers: buildAuthHeader('NODIS_REGISTRY')}).then(response => {
+            let registryHeaders = buildAuthHeader('NODIS_REGISTRY');
+            let registryUrl = 'https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + projectName + '/manifests/' + projectVersion;
+            fetch(registryUrl, {headers: registryHeaders}).then(response => {
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
 
-                envVars.MAESTRO_REPOSITORY = 'maestro_' + team;
-
                 envVars.DOCKER_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
                 envVars.DOCKER_IMAGE_TAGS = [projectVersion].concat(envVars.NODIS_LEGACY ? ['legacy'] : ['latest', projectBaseVersion, envVars.NODIS_DEPLOY_ENV]).join(' ');
-
-                envVars.DEPLOY_RC_TO_PROD = projectClass !== 'deployment';
 
                 publishEnvVarsArtifact(envVars, projectSetup)
 
@@ -190,7 +194,6 @@ fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '
         case 'webapps':
 
             envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
-
             envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + projectVersion + '.tgz';
             envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
