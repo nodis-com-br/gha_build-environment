@@ -195,6 +195,7 @@ fetch(url, {headers: headers}).then(response => {
 
             envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
             envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + projectVersion + '.tgz';
+            envVars.NODIS_ARTIFACT_BUCKET = config.webappsBucket;
             envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
             verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);
