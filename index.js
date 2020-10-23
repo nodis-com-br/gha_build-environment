@@ -149,7 +149,7 @@ fetch(url, {headers: headers}).then(response => {
             envVars.NODIS_ARTIFACT_NAME = functionName + '.zip';
             envVars.NODIS_ARTIFACT_FULLNAME = functionName + '-' + projectVersion + '.zip';
             envVars.NODIS_ARTIFACT_PATH = functionName;
-            envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucket + '-' + process.env.AWS_REGION;
+            envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + process.env.AWS_REGION;
 
             verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, envVars.NODIS_ARTIFACT_PATH + '/' + envVars.NODIS_ARTIFACT_FULLNAME, envVars, projectSetup, skipVersionValidation);
 
@@ -195,7 +195,8 @@ fetch(url, {headers: headers}).then(response => {
 
             envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
             envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + projectVersion + '.tgz';
-            envVars.NODIS_ARTIFACT_BUCKET = config.webappsBucket;
+            envVars.NODIS_ARTIFACT_BUCKET = config.webappsArtifactBucket;
+            envVars.NODIS_WEBAPP_BUCKET = config.webappBucketPrefix + '-' + projectName;
             envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
             verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);

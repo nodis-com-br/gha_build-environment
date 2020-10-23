@@ -1,8 +1,9 @@
 module.exports = {
     versionConflictMessage: "Version already exists in repository",
     publicRegistry: 'docker.io/nodisbr',
-    webappsBucket: 'nodis-webapps',
-    lambdaBucket: 'nodis-lambda',
+    webappsArtifactBucket: 'nodis-webapps',
+    webappBucketPrefix: 'nodis-web',
+    lambdaBucketPrefix: 'nodis-lambda',
     legacyPattern: /^refs\/heads\/legacy\/.+$/,
     topics: {
         teams: /^(devback|devfront|catalog|experimento|devops)$/,
