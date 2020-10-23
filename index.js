@@ -199,7 +199,7 @@ fetch(url, {headers: headers}).then(response => {
             envVars.NODIS_WEBAPP_BUCKET = config.webappBucketPrefix + '-' + projectName;
             envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
-            verifyArtifactOnS3(config.webappsBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);
+            verifyArtifactOnS3(config.webappsArtifactBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);
 
             break;
 
