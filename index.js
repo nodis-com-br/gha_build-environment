@@ -45,42 +45,42 @@ function buildAuthHeader(envPrefix) {
     return {Authorization: 'Basic ' + base64.encode(process.env[envPrefix + '_USER'] + ':' + process.env[envPrefix + '_PASSWORD'])};
 }
 
-function verifyArtifactOnS3(bucket, key, envVars, projectSetup, skipVersionValidation) {
+function verifyArtifactOnS3(bucket, key, vars, projectSetup, skipVersionValidation) {
     const s3 = new AWS.S3({apiVersion: '2006-03-01'});
     let bucketParam = {Bucket: bucket, Key: key};
     s3.headObject(bucketParam, function(err) {
         skipVersionValidation || err || core.setFailed(config.versionConflictMessage);
-        publishEnvVarsArtifact(envVars, projectSetup);
+        publishVarsArtifact(vars);
     });
 }
 
-function publishEnvVarsArtifact(envVars, projectSetup) {
+function publishVarsArtifact(vars) {
     const artifactClient = artifact.create();
-    'build_environment' in projectSetup && Object.assign(envVars, projectSetup['build_environment']);
-    fs.writeFileSync('./environmentVars.json', JSON.stringify(envVars, null, 2));
+    fs.writeFileSync('./environmentVars.json', JSON.stringify(vars, null, 2));
     artifactClient
         .uploadArtifact('environmentVars', ['environmentVars.json'], '.')
         .catch(error => core.setFailed(error));
-    core.info('Environment variables: ' + JSON.stringify(envVars, null, 4));
+    core.info('Environment variables: ' + JSON.stringify(vars, null, 4));
 }
 
 
 // Get project metadata from execution environment
 const projectSetup = ini.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/setup.cfg', 'utf-8'));
-const projectName = process.env.GITHUB_REPOSITORY.split('/')[1];
 const projectVersion = projectSetup['bumpversion']['current_version'];
 const projectBaseVersion = projectVersion.split('-')[0];
 const targetBranch = process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF;
 
-const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true";
+const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true" || projectSetup['build_environment']['SKIP_VERSION_VALIDATION'] === "true";
 
 // Create environment vars object
-let envVars = {
-    NODIS_PROJECT_NAME: projectName,
+let vars = {
+    NODIS_PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     NODIS_PROJECT_VERSION: projectVersion,
     NODIS_PROJECT_BASE_VERSION: projectBaseVersion,
     NODIS_LEGACY: !!targetBranch.match(config.legacyPattern)
 };
+
+'build_environment' in projectSetup && Object.assign(vars, projectSetup['build_environment']);
 
 // Fetch project topic from GitHub
 let headers = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
@@ -98,8 +98,8 @@ fetch(url, {headers: headers}).then(response => {
     const projectClass = getMetadataFromTopics('class', response.names, aggregateClasses());
     const workflow = getMetadataFromTopics('workflow', response.names, config.topics.workflows, false);
 
-    if (workflow === 'gitflow') envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
-    envVars.MAESTRO_REPOSITORY = 'maestro_' + team;
+    if (workflow === 'gitflow') vars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+    vars.MAESTRO_REPOSITORY = 'maestro_' + team;
 
     switch(getClassGrouping(projectClass)) {
 
@@ -108,7 +108,7 @@ fetch(url, {headers: headers}).then(response => {
             if (interpreter === 'python') {
 
                 let pypiHeaders = buildAuthHeader('NODIS_PYPI');
-                let pypiUrl = 'https://' + process.env.NODIS_PYPI_HOST + '/simple/' + projectName + '/json';
+                let pypiUrl = 'https://' + process.env.NODIS_PYPI_HOST + '/simple/' + vars.NODIS_PROJECT_NAME + '/json';
                 fetch(pypiUrl, {headers: pypiHeaders}).then(response => {
 
                     if (response.status === 200) return response.json();
@@ -118,7 +118,7 @@ fetch(url, {headers: headers}).then(response => {
                 }).then(response => {
 
                     targetBranch === 'refs/head/master' || skipVersionValidation || projectVersion in response['releases'] && core.setFailed(config['versionConflictMessage']);
-                    publishEnvVarsArtifact(envVars, projectSetup)
+                    publishVarsArtifact(vars)
 
                 }).catch(error => core.setFailed(error))
 
@@ -128,14 +128,14 @@ fetch(url, {headers: headers}).then(response => {
 
         case 'charts':
 
-            envVars.NODIS_PROJECT_NAME = projectName.substring(6);
+            vars.NODIS_PROJECT_NAME = vars.NODIS_PROJECT_NAME.substring(6);
 
             let chartsHeaders = buildAuthHeader('NODIS_CHART_REPOSITORY');
-            let chartsUrl = 'https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + envVars.NODIS_PROJECT_NAME + '/' + projectVersion;
+            let chartsUrl = 'https://' + process.env.NODIS_CHART_REPOSITORY_HOST + '/api/charts/' + vars.NODIS_PROJECT_NAME + '/' + projectVersion;
             fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                publishEnvVarsArtifact(envVars, projectSetup)
+                publishVarsArtifact(vars)
 
             }).catch(error => core.setFailed(error));
 
@@ -143,30 +143,30 @@ fetch(url, {headers: headers}).then(response => {
 
         case 'lambda':
 
-            const functionName = projectName.substring(3);
+            const functionName = vars.NODIS_PROJECT_NAME.substring(3);
 
-            envVars.NODIS_FUNCTION_NAME = functionName;
-            envVars.NODIS_ARTIFACT_NAME = functionName + '.zip';
-            envVars.NODIS_ARTIFACT_FULLNAME = functionName + '-' + projectVersion + '.zip';
-            envVars.NODIS_ARTIFACT_PATH = functionName;
-            envVars.NODIS_ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + process.env.AWS_REGION;
+            vars.NODIS_FUNCTION_NAME = functionName;
+            vars.NODIS_ARTIFACT_NAME = functionName + '.zip';
+            vars.NODIS_ARTIFACT_FULLNAME = functionName + '-' + projectVersion + '.zip';
+            vars.NODIS_ARTIFACT_PATH = functionName;
+            vars.NODIS_ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + process.env.AWS_REGION;
 
-            verifyArtifactOnS3(envVars.NODIS_ARTIFACT_BUCKET, envVars.NODIS_ARTIFACT_PATH + '/' + envVars.NODIS_ARTIFACT_FULLNAME, envVars, projectSetup, skipVersionValidation);
+            verifyArtifactOnS3(vars.NODIS_ARTIFACT_BUCKET, vars.NODIS_ARTIFACT_PATH + '/' + vars.NODIS_ARTIFACT_FULLNAME, vars, projectSetup, skipVersionValidation);
 
             break;
 
         case 'publicImages':
 
-            const imageName = projectName.substring(3);
+            const imageName = vars.NODIS_PROJECT_NAME.substring(3);
 
             fetch('https://' + config.publicRegistry + '/v2/' + imageName + '/manifests/' + projectVersion).then(response => {
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
 
-                envVars.DOCKER_IMAGE_NAME = config.publicRegistry + '/' + imageName;
-                envVars.DOCKER_IMAGE_TAGS = 'latest ' + projectVersion;
+                vars.DOCKER_IMAGE_NAME = config.publicRegistry + '/' + imageName;
+                vars.DOCKER_IMAGE_TAGS = 'latest ' + projectVersion;
 
-                publishEnvVarsArtifact(envVars, projectSetup)
+                publishVarsArtifact(vars)
 
             }).catch(error => core.setFailed(error));
 
@@ -174,18 +174,18 @@ fetch(url, {headers: headers}).then(response => {
 
         case 'privateImages':
 
-            envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+            vars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
 
             let registryHeaders = buildAuthHeader('NODIS_REGISTRY');
-            let registryUrl = 'https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + projectName + '/manifests/' + projectVersion;
+            let registryUrl = 'https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + vars.NODIS_PROJECT_NAME + '/manifests/' + projectVersion;
             fetch(registryUrl, {headers: registryHeaders}).then(response => {
 
                 skipVersionValidation || response.status === 200 && core.setFailed(config.versionConflictMessage);
 
-                envVars.DOCKER_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + projectName;
-                envVars.DOCKER_IMAGE_TAGS = [projectVersion].concat(envVars.NODIS_LEGACY ? ['legacy'] : ['latest', projectBaseVersion, envVars.NODIS_DEPLOY_ENV]).join(' ');
+                vars.DOCKER_IMAGE_NAME = process.env.NODIS_REGISTRY_HOST + '/' + vars.NODIS_PROJECT_NAME;
+                vars.DOCKER_IMAGE_TAGS = [projectVersion].concat(vars.NODIS_LEGACY ? ['legacy'] : ['latest', projectBaseVersion, vars.NODIS_DEPLOY_ENV]).join(' ');
 
-                publishEnvVarsArtifact(envVars, projectSetup)
+                publishVarsArtifact(vars)
 
             }).catch(error => core.setFailed(error));
 
@@ -193,13 +193,13 @@ fetch(url, {headers: headers}).then(response => {
 
         case 'webapps':
 
-            envVars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
-            envVars.NODIS_ARTIFACT_FILENAME = projectName + '-' + projectVersion + '.tgz';
-            envVars.NODIS_ARTIFACT_BUCKET = config.webappsArtifactBucket;
-            envVars.NODIS_WEBAPP_BUCKET = config.webappBucketPrefix + '-' + projectName;
-            envVars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
+            vars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+            vars.NODIS_ARTIFACT_FILENAME = vars.NODIS_PROJECT_NAME + '-' + projectVersion + '.tgz';
+            vars.NODIS_ARTIFACT_BUCKET = config.webappsArtifactBucket;
+            vars.NODIS_WEBAPP_BUCKET = config.webappBucketPrefix + '-' + vars.NODIS_PROJECT_NAME;
+            vars.NODIS_SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
 
-            verifyArtifactOnS3(config.webappsArtifactBucket, projectName + '/' + envVars.NODIS_ARTIFACT_FILENAME, envVars, projectSetup, skipVersionValidation);
+            verifyArtifactOnS3(config.webappsArtifactBucket, vars.NODIS_PROJECT_NAME + '/' + vars.NODIS_ARTIFACT_FILENAME, vars, projectSetup, skipVersionValidation);
 
             break;
 
