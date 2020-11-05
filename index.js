@@ -70,7 +70,7 @@ const projectVersion = projectSetup['bumpversion']['current_version'];
 const projectBaseVersion = projectVersion.split('-')[0];
 const targetBranch = process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF;
 
-const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true" || projectSetup['build_environment']['SKIP_VERSION_VALIDATION'] === "true";
+const skipVersionValidation = process.env.SKIP_VERSION_VALIDATION === "true";
 
 // Create environment vars object
 let vars = {
