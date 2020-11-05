@@ -149,7 +149,7 @@ fetch(url, {headers: headers}).then(response => {
             vars.NODIS_ARTIFACT_NAME = functionName + '.zip';
             vars.NODIS_ARTIFACT_FULLNAME = functionName + '-' + projectVersion + '.zip';
             vars.NODIS_ARTIFACT_PATH = functionName;
-            vars.NODIS_ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + process.env.AWS_REGION;
+            vars.NODIS_ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + vars.AWS_REGION;
 
             verifyArtifactOnS3(vars.NODIS_ARTIFACT_BUCKET, vars.NODIS_ARTIFACT_PATH + '/' + vars.NODIS_ARTIFACT_FULLNAME, vars, projectSetup, skipVersionValidation);
 
