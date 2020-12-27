@@ -99,7 +99,6 @@ fetch(url, {headers: headers}).then(response => {
     const workflow = getMetadataFromTopics('workflow', response.names, config.topics.workflows, false);
 
     if (workflow === 'gitflow') vars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
-    if (team === 'catalog' && vars.NODIS_DEPLOY_ENV === 'prod') vars.NODIS_DEPLOY_ENV = team;
     vars.MAESTRO_REPOSITORY = 'maestro_' + team;
 
     switch(getClassGrouping(projectClass)) {
@@ -176,6 +175,7 @@ fetch(url, {headers: headers}).then(response => {
         case 'privateImages':
 
             vars.NODIS_DEPLOY_ENV = getDeploymentEnvironment(targetBranch, projectVersion);
+            if (team === 'catalog' && vars.NODIS_DEPLOY_ENV === 'prod') vars.NODIS_DEPLOY_ENV = team;
 
             let registryHeaders = buildAuthHeader('NODIS_REGISTRY');
             let registryUrl = 'https://' + process.env.NODIS_REGISTRY_HOST + '/v2/' + vars.NODIS_PROJECT_NAME + '/manifests/' + projectVersion;
